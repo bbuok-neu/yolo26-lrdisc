@@ -36,6 +36,7 @@ def main():
     p.add_argument("--device", default="0")
     p.add_argument("--levels", default="full", choices=["full", "p5only", "tada_only", "noema", "lite", "lrdisc"])
     p.add_argument("--strides", default="3,10,25", help="sparse far-history strides for lrdisc")
+    p.add_argument("--aux", type=float, default=0.0, help="causal auxiliary supervision weight (Auto-DFLLs); 0=off")
     args = p.parse_args()
 
     strides = tuple(int(s) for s in args.strides.split(","))
@@ -57,7 +58,8 @@ def main():
     # identity-passthrough levels still need a module; disable all flags -> out conv has 0 inputs?
     # ensure at least tada so the module is well-formed; for p5only we instead skip fusion on P3/P4
     tcfg = dict(T=args.T, hid=args.hid, history_window=args.history_window, level_cfg=level_cfg,
-                levels=args.levels, strides=strides if args.levels == "lrdisc" else None)
+                levels=args.levels, strides=strides if args.levels == "lrdisc" else None,
+                aux_weight=args.aux)
 
     overrides = dict(
         model=args.weights, data=args.data, epochs=args.epochs, batch=args.batch, imgsz=args.imgsz,

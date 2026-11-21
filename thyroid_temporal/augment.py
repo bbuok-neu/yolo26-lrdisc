@@ -72,9 +72,10 @@ def _apply_boxes(boxes_xyxy, M, new, flip):
     return xyxy[keep], keep
 
 
-def augment_clip(imgs, boxes_xywh_norm, new=640):
+def augment_clip(imgs, boxes_xywh_norm, new=640, boxes_list=None):
     """imgs: list of T BGR images (native res). boxes_xywh_norm: (n,5) cls+xywh normalized for target.
-    Returns augmented imgs (list), target boxes (n,5) cls+xywh normalized in `new` space, ratio_pad."""
+    boxes_list: optional per-frame (n_k,5) boxes, transformed with the SAME shared M/flip (for aux supervision).
+    Returns (imgs, target boxes, ratio_pad, aux_boxes_list_or_None)."""
     lb = [letterbox(im, new) for im in imgs]
     imgs = [x[0] for x in lb]
     ratio_pad = (lb[0][1], lb[0][2])
@@ -83,6 +84,14 @@ def augment_clip(imgs, boxes_xywh_norm, new=640):
     imgs = [cv2.warpAffine(im, M[:2], (new, new), borderValue=(114, 114, 114)) for im in imgs]
     if flip:
         imgs = [im[:, ::-1].copy() for im in imgs]
+    boxes = _transform_boxes(boxes_xywh_norm, M, flip, new, ratio_pad)
+    aux = [_transform_boxes(b, M, flip, new, ratio_pad) for b in boxes_list] if boxes_list is not None else None
+    for im in imgs:
+        augment_hsv(im)
+    return imgs, boxes, ratio_pad, aux
+
+
+def _transform_boxes(boxes_xywh_norm, M, flip, new, ratio_pad):
     if len(boxes_xywh_norm):
         cls = boxes_xywh_norm[:, 0:1]
         xywh = boxes_xywh_norm[:, 1:5].copy()
@@ -98,12 +107,8 @@ def augment_clip(imgs, boxes_xywh_norm, new=640):
         yc = (xyxy[:, 1] + xyxy[:, 3]) / 2 / new
         bw = (xyxy[:, 2] - xyxy[:, 0]) / new
         bh = (xyxy[:, 3] - xyxy[:, 1]) / new
-        boxes = np.concatenate([cls, np.stack([xc, yc, bw, bh], 1)], 1).astype(np.float32)
-    else:
-        boxes = np.zeros((0, 5), dtype=np.float32)
-    for im in imgs:
-        augment_hsv(im)
-    return imgs, boxes, ratio_pad
+        return np.concatenate([cls, np.stack([xc, yc, bw, bh], 1)], 1).astype(np.float32)
+    return np.zeros((0, 5), dtype=np.float32)
 
 
 def letterbox_clip(imgs, boxes_xywh_norm, new=640):

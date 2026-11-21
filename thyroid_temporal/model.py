@@ -115,6 +115,51 @@ class TemporalDetectionModel(DetectionModel):
         for m in self.temporal_layers:
             m.reset_state()
 
+    def loss(self, batch, preds=None):
+        """Current-frame loss + causal auxiliary supervision on every history frame (Auto-DFLLs).
+
+        Each history frame tau is predicted using ONLY chronologically-older frames in the window
+        (causal), with its neck features detached (grad flows through temporal+Detect only) -> cheap.
+        Inference unchanged (aux is training-only). Enabled via tcfg['aux_weight']>0.
+        """
+        aux_w = float(self.tcfg.get("aux_weight", 0.0))
+        if aux_w <= 0 or "aux_frame" not in batch or len(self.temporal_layers) != len(FEAT_LAYERS):
+            return super().loss(batch, preds)
+        if getattr(self, "criterion", None) is None:
+            self.criterion = self.init_criterion()
+        img = batch["img"]
+        B, T = img.shape[:2]
+        K = T - 1
+        hist = img[:, :-1].reshape(B * K, *img.shape[2:])
+        was_training = self.training
+        self.eval()
+        with torch.no_grad():
+            feats = self._extract_features(hist)
+        if was_training:
+            self.train()
+        neck = {s: feats[s].view(B, K, *feats[s].shape[1:]) for s in FEAT_LAYERS}
+        # current frame (full grad)
+        self._set_ctx(neck)
+        preds_cur = self._predict_once(img[:, -1])
+        self._set_ctx(None)
+        total, items = self.criterion(preds_cur, batch)
+        # causal auxiliary losses on history frames
+        af = batch["aux_frame"]
+        for tau in range(K):
+            older = list(range(tau + 1, K))  # chronologically older (strides ascending)
+            idxs = older + [K - 1] * (K - len(older))
+            ctx_tau = {s: torch.stack([neck[s][:, i] for i in idxs], dim=1) for s in FEAT_LAYERS}
+            self._set_ctx(ctx_tau)
+            fused = [tf(neck[s][:, tau]) for s, tf in zip(FEAT_LAYERS, self.temporal_layers)]
+            preds_tau = self.model[-1](fused)
+            self._set_ctx(None)
+            mask = af == tau
+            tgt = {"batch_idx": batch["aux_batch"][mask], "cls": batch["aux_cls"][mask],
+                   "bboxes": batch["aux_bboxes"][mask]}
+            loss_tau, _ = self.criterion(preds_tau, tgt)
+            total = total + aux_w * loss_tau
+        return total, items
+
 
 def build_temporal_model(weights=None, nc=1, tcfg=None, verbose=True, ch=3):
     # Build base first, load pretrained weights while Detect is still at its original index (23),

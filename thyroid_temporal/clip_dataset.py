@@ -22,7 +22,7 @@ from .augment import augment_clip, letterbox_clip
 
 class ClipDataset(Dataset):
     def __init__(self, img_dir, data=None, imgsz=640, T=4, augment=False,
-                 history_window=50, deterministic_hist=False, stride=32, strides=None):
+                 history_window=50, deterministic_hist=False, stride=32, strides=None, return_aux=False):
         self.img_dir = Path(img_dir)
         self.label_dir = Path(str(self.img_dir).replace("images", "labels"))
         self.imgsz, self.T = imgsz, T
@@ -33,6 +33,7 @@ class ClipDataset(Dataset):
         self.strides = tuple(strides) if strides else None
         if self.strides:
             self.T = len(self.strides) + 1
+        self.return_aux = return_aux
 
         files = sorted(self.img_dir.glob("*.png"))
         self.videos = {}
@@ -86,14 +87,16 @@ class ClipDataset(Dataset):
                 raise FileNotFoundError(f"failed to read {frames[k]} (video {video}, idx {k})")
         ori_shape = imgs[-1].shape[:2]
         boxes = self.labels[frames[j]]
+        boxes_list = [self.labels[frames[k]] for k in idxs] if self.return_aux else None
         if self.augment:
-            imgs, boxes, ratio_pad = augment_clip(imgs, boxes, self.imgsz)
+            imgs, boxes, ratio_pad, aux = augment_clip(imgs, boxes, self.imgsz, boxes_list=boxes_list)
         else:
             imgs, boxes, ratio_pad = letterbox_clip(imgs, boxes, self.imgsz)
+            aux = None
         arr = np.stack([im.transpose(2, 0, 1) for im in imgs], axis=0)  # (T,3,H,W) BGR
         img = torch.from_numpy(np.ascontiguousarray(arr))
         n = len(boxes)
-        return {
+        out = {
             "img": img,
             "cls": torch.from_numpy(boxes[:, 0:1]) if n else torch.zeros((0, 1)),
             "bboxes": torch.from_numpy(boxes[:, 1:5]) if n else torch.zeros((0, 4)),
@@ -102,7 +105,27 @@ class ClipDataset(Dataset):
             "ori_shape": ori_shape,
             "ratio_pad": ratio_pad,
         }
+        if aux is not None:
+            ac, ab, af = [], [], []
+            for tau, b in enumerate(aux):
+                m = len(b)
+                ac.append(torch.from_numpy(b[:, 0:1]) if m else torch.zeros((0, 1)))
+                ab.append(torch.from_numpy(b[:, 1:5]) if m else torch.zeros((0, 4)))
+                af.append(torch.full((m,), tau, dtype=torch.float32))
+            out["aux_cls"] = torch.cat(ac, 0)
+            out["aux_bboxes"] = torch.cat(ab, 0)
+            out["aux_frame"] = torch.cat(af, 0)
+            out["aux_batch"] = torch.zeros(sum(len(x) for x in ac))
+        return out
 
     @staticmethod
     def collate_fn(batch):
-        return YOLODataset.collate_fn(batch)
+        nb = YOLODataset.collate_fn(batch)
+        if "aux_cls" in nb:
+            offs = torch.cat([torch.full((len(x),), i, dtype=torch.float32)
+                              for i, x in enumerate(nb["aux_batch"])])
+            nb["aux_cls"] = torch.cat(list(nb["aux_cls"]), 0)
+            nb["aux_bboxes"] = torch.cat(list(nb["aux_bboxes"]), 0)
+            nb["aux_frame"] = torch.cat(list(nb["aux_frame"]), 0)
+            nb["aux_batch"] = torch.cat(list(nb["aux_batch"]), 0) + offs
+        return nb
