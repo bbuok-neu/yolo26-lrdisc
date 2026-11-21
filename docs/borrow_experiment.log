@@ -1,0 +1,5 @@
+baseline/none: mAP50=0.612 mAP50_95=0.311 P=0.750 R=0.558 F1=0.640 FPS=40.363
+baseline/persist: mAP50=0.612 mAP50_95=0.308 P=0.754 R=0.570 F1=0.649 FPS=40.728
+lrdisc/none: mAP50=0.625 mAP50_95=0.322 P=0.762 R=0.584 F1=0.661 FPS=35.529
+lrdisc/persist: mAP50=0.624 mAP50_95=0.319 P=0.755 R=0.607 F1=0.673 FPS=34.887
+saved C:\Users\bbuok\claude_code_project\thyroid-temporal\runs\borrow_experiment.json

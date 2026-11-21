@@ -1,0 +1,7 @@
+baseline/none: mAP50=0.638 P=0.720 R=0.581 F1=0.643 onsetR=0.321 FPS=38.587
+baseline/naive: mAP50=0.640 P=0.718 R=0.593 F1=0.649 onsetR=0.237 FPS=39.594
+baseline/mitigated: mAP50=0.638 P=0.722 R=0.581 F1=0.644 onsetR=0.321 FPS=39.946
+lrdisc/none: mAP50=0.640 P=0.735 R=0.576 F1=0.646 onsetR=0.274 FPS=34.765
+lrdisc/naive: mAP50=0.641 P=0.725 R=0.590 F1=0.651 onsetR=0.223 FPS=34.346
+lrdisc/mitigated: mAP50=0.639 P=0.736 R=0.576 F1=0.647 onsetR=0.274 FPS=33.994
+saved runs/mitigated_gate.json

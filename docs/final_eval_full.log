@@ -1,0 +1,62 @@
+=== baseline streaming test (baseline_full) ===
+{
+ "mAP50": 0.6087925574217832,
+ "mAP50_95": 0.3165627502421982,
+ "precision": 0.721081728430089,
+ "recall": 0.5645346610494063,
+ "f1": 0.6332769751216568,
+ "n_frames": 2610,
+ "n_gt": 2611,
+ "n_pred": 16576,
+ "inference_ms": 28.144360500143822,
+ "FPS": 35.53109689576673
+}
+saved runs\stream_test_baseline_full.json
+=== temporal streaming test (temporal_full) ===
+{
+ "mAP50": 0.5825592142266256,
+ "mAP50_95": 0.2910079170382031,
+ "precision": 0.6463334131679017,
+ "recall": 0.5051704327843738,
+ "f1": 0.5670993304985672,
+ "n_frames": 2610,
+ "n_gt": 2611,
+ "n_pred": 25597,
+ "inference_ms": 37.75616499986007,
+ "FPS": 26.485740805606348
+}
+saved runs\stream_test_temporal_full.json
+=== temporal diagnostic (TemporalLens) ===
+normal {"mAP50": 0.6234919844885012, "mAP50_95": 0.309771950818526, "recall": 0.58875}
+shuffle {"mAP50": 0.6258204919763917, "mAP50_95": 0.3120160844321831, "recall": 0.5883078390890891}
+freeze {"mAP50": 0.6170587262059305, "mAP50_95": 0.3150152441230466, "recall": 0.573487987987988}
+zero {"mAP50": 0.47892951226078007, "mAP50_95": 0.21937341763884138, "recall": 0.41063026261555674}
+
+mAP50 drop vs normal:
+  normal: +0.00 pp
+  shuffle: +0.23 pp
+  freeze: -0.64 pp
+  zero: -14.46 pp
+saved runs/diagnose_temporal_full.json
+=== qualitative visualization ===
+saved C:\Users\bbuok\claude_code_project\thyroid-temporal\docs\qualitative\123_compare.jpg and conf curve
+=== report ===
+# 结果汇总（自动生成）
+
+## 训练期验证（val_sub, 539 帧）
+
+| 模型 | best mAP50 | best mAP50-95 |
+|---|---|---|
+| YOLO26n 基线 | 91.94 | 62.07 |
+| ThyroidTempoNet | 88.45 | 58.57 |
+
+## 流式评测（完整 test, 2610 帧, 按视频因果顺序）
+
+| 模型 | mAP50 | mAP50-95 | Precision | Recall | F1 | FP/img@R90 | FPS |
+|---|---|---|---|---|---|---|---|
+| YOLO26n 基线 | 60.88 | 31.66 | 72.11 | 56.45 | 63.33 | – | 35.53 |
+| ThyroidTempoNet | 58.26 | 29.10 | 64.63 | 50.52 | 56.71 | – | 26.49 |
+
+**流式 mAP50 提升：-2.62 pp；mAP50-95 提升：-2.56 pp。**
+saved docs/comparison.png
+ALL DONE

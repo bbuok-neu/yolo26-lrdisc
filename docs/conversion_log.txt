@@ -1,0 +1,58 @@
+frames=17412 videos=192 split frame counts=[12185, 2617, 2610]
+1000/17412 frames  13s  (78.9 fps)
+2000/17412 frames  25s  (79.8 fps)
+3000/17412 frames  38s  (79.6 fps)
+4000/17412 frames  50s  (80.1 fps)
+5000/17412 frames  63s  (79.9 fps)
+6000/17412 frames  75s  (79.7 fps)
+7000/17412 frames  88s  (79.9 fps)
+8000/17412 frames  100s  (79.8 fps)
+9000/17412 frames  113s  (79.7 fps)
+10000/17412 frames  125s  (79.8 fps)
+11000/17412 frames  138s  (79.8 fps)
+12000/17412 frames  150s  (79.8 fps)
+13000/17412 frames  164s  (79.3 fps)
+14000/17412 frames  177s  (79.1 fps)
+15000/17412 frames  190s  (78.9 fps)
+16000/17412 frames  202s  (79.1 fps)
+17000/17412 frames  215s  (79.1 fps)
+{
+ "n_frames": 17412,
+ "n_videos": 192,
+ "image_hw": [
+  802,
+  1054
+ ],
+ "thresh": 127,
+ "min_area": 25,
+ "seed": 42,
+ "split_videos": {
+  "train": 106,
+  "val": 43,
+  "test": 43
+ },
+ "split_frames": {
+  "train": 12185,
+  "val": 2617,
+  "test": 2610
+ },
+ "split_boxes": {
+  "train": 12185,
+  "val": 2617,
+  "test": 2611
+ },
+ "empty_frames": 0,
+ "multi_box_frames": 1,
+ "dropped_small_components": 0,
+ "rel_box_area_percentiles": {
+  "1": 0.004776673117964103,
+  "5": 0.012516147960270103,
+  "25": 0.041144766168071285,
+  "50": 0.07808751366365868,
+  "75": 0.14536358345123906,
+  "95": 0.25554472452644483,
+  "99": 0.3447756320773021
+ },
+ "elapsed_sec": 220.2
+}
+DONE

@@ -1,0 +1,12 @@
+data/
+runs/
+dist/
+reference_code/
+weights/
+__pycache__/
+*.pt
+*.pyc
+*.zip
+*.hdf5
+Arial.ttf
+docs/_*.txt
