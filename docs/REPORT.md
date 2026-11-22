@@ -54,3 +54,14 @@ P/R 随置信度阈值变化；报表 max-F1 点不可直接比。锁定 precisi
 可选 pool=2（半分辨率相关）探针 31.3fps，但需重训保持一致；pool=1 向量化已达标 ≥25fps。
 - 服务器大数据：用完整数据重训 lrdisc/lite，预期增益放大；可加光流/可变形对齐与血管标注进一步压 FP。
 - 命令见 README/AGENTS。图表 [comparison.png](comparison.png)、定性 [qualitative/](qualitative/)。
+
+## 7. 后续更新（本表数字的时效性说明）
+
+- §3 表为**早期选点**结果。lrdisc 的**最终权威交付为 ep20 last**（同预算流式评测）：
+  mAP50 **.6377** / mAP50-95 .3287 / P **.7247** / R **.6090** / F1 **.6618** / 35.8fps——
+  即 precision 追平基线（.721）的同时 recall +4.5pp、mAP50 +2.9pp，§5 的"precision 未超基线"
+  结论对 ep20 last 已不成立（best ep6 选点偏早所致）。
+- 因果辅助监督（aux-supervision 分支，w=0.5）为负收益（mAP50 .605 < .638），未采纳。
+- **static-mix 分支**：混入 ThyroidXL 单图后 xlrep ep18 达 mAP50 **.6654** / F1 .6789（当前全项目最佳），
+  见 docs/static_mix_result.md 与 docs/EXPERIMENTS.md（权威台账）。
+- 接手请先读根目录 AGENTS.md。

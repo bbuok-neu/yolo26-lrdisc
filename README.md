@@ -54,3 +54,12 @@ python scripts/stream_eval.py --weights runs/temporal_v1/weights/best.pt --tempo
 - `data/thyroid_yolo/`：YOLO 数据集 + 子集
 - `runs/`：训练输出与指标
 - `docs/`：论文笔记、日志、报告
+
+## 分支与交接（agent 接手必读）
+- **接手入口：[AGENTS.md](AGENTS.md)**（环境/数据/复现/陷阱/当前状态）；
+  权威实验台账：**[docs/EXPERIMENTS.md](docs/EXPERIMENTS.md)**。
+- `main`：基线 + lite/lrdisc（lrdisc ep20 为该分支最佳，test mAP50 .638）。
+- `aux-supervision`：因果辅助监督实验（负结果，见该分支 docs/aux_supervision_result.md）。
+- `static-mix`：ThyroidXL 单图混入（**当前最佳**：xlrep ep18 test mAP50 .665）+ 去噪研究（结论：不去噪）
+  + 检查点续训支持；见 docs/static_mix_result.md、docs/xl_noise_analysis.md。
+- 注意：docs/RESULTS.md 为历史自动汇总（lite 时代），权威数字以 EXPERIMENTS.md 为准。
