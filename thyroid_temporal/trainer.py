@@ -60,6 +60,7 @@ class TemporalTrainer(DetectionTrainer):
             history_window=self.tcfg.get("history_window", 50),
             deterministic_hist=True,  # consecutive history matches streaming inference exactly
             strides=self.tcfg.get("strides"),
+            static_mode=self.tcfg.get("static_mode", "repeat"),
         )
 
     def preprocess_batch(self, batch):

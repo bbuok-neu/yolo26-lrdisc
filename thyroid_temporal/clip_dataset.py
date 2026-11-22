@@ -20,9 +20,23 @@ from ultralytics.data.dataset import YOLODataset
 from .augment import augment_clip, letterbox_clip
 
 
+def _jitter_history(im):
+    """Small independent affine jitter of a still's history copy: simulates probe micro-motion
+    (translate <=2%, scale <=3%, rotate <=2 deg) so the temporal module sees plausible motion
+    instead of perfectly zero inter-frame difference."""
+    h, w = im.shape[:2]
+    ang = random.uniform(-2.0, 2.0)
+    s = random.uniform(0.97, 1.03)
+    M = cv2.getRotationMatrix2D((w / 2, h / 2), ang, s)
+    M[0, 2] += random.uniform(-0.02, 0.02) * w
+    M[1, 2] += random.uniform(-0.02, 0.02) * h
+    return cv2.warpAffine(im, M, (w, h), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
+
+
 class ClipDataset(Dataset):
     def __init__(self, img_dir, data=None, imgsz=640, T=4, augment=False,
-                 history_window=50, deterministic_hist=False, stride=32, strides=None):
+                 history_window=50, deterministic_hist=False, stride=32, strides=None,
+                 static_mode="repeat"):
         self.img_dir = Path(img_dir)
         self.label_dir = Path(str(self.img_dir).replace("images", "labels"))
         self.imgsz, self.T = imgsz, T
@@ -33,6 +47,10 @@ class ClipDataset(Dataset):
         self.strides = tuple(strides) if strides else None
         if self.strides:
             self.T = len(self.strides) + 1
+        # history synthesis for length-1 pseudo-videos (static images mixed into video training):
+        # repeat = identical copies (strided sampler already clamps to frame 0), black = zeroed
+        # history (onset-like cold start), jitter = micro-motion copies, mixed = random per sample
+        self.static_mode = static_mode
 
         files = sorted(self.img_dir.glob("*.png"))
         self.videos = {}
@@ -84,6 +102,14 @@ class ClipDataset(Dataset):
         for k, im in zip(idxs, imgs):
             if im is None:
                 raise FileNotFoundError(f"failed to read {frames[k]} (video {video}, idx {k})")
+        if len(frames) == 1 and self.static_mode != "repeat":
+            mode = self.static_mode
+            if mode == "mixed":
+                mode = random.choice(("repeat", "black", "jitter"))
+            if mode == "black":
+                imgs = [np.zeros_like(imgs[-1]) for _ in idxs[:-1]] + [imgs[-1]]
+            elif mode == "jitter":
+                imgs = [_jitter_history(imgs[-1]) for _ in idxs[:-1]] + [imgs[-1]]
         ori_shape = imgs[-1].shape[:2]
         boxes = self.labels[frames[j]]
         if self.augment:
