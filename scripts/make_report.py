@@ -72,7 +72,7 @@ def main():
         d95 = (temp_stream['mAP50_95'] - base_stream['mAP50_95']) * 100
         lines.append(f"\n**流式 mAP50 提升：{d50:+.2f} pp；mAP50-95 提升：{d95:+.2f} pp。**")
 
-    (PROJECT / "docs" / "RESULTS.md").write_text("\n".join(lines) + "\n")
+    (PROJECT / "docs" / "RESULTS.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print("\n".join(lines))
 
     try:
