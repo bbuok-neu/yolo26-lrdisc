@@ -1,0 +1,13 @@
+{
+ "mAP50": 0.6523966787392852,
+ "mAP50_95": 0.3401295785907439,
+ "precision": 0.774810939725075,
+ "recall": 0.5744925315970892,
+ "f1": 0.6597820397447105,
+ "n_frames": 2610,
+ "n_gt": 2611,
+ "n_pred": 10133,
+ "inference_ms": 29.809719230750208,
+ "FPS": 33.546105961590214
+}
+saved runs\stream_test_temporal_lrdisc_xlrep_best.json
