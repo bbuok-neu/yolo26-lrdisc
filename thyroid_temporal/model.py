@@ -117,6 +117,21 @@ class TemporalDetectionModel(DetectionModel):
 
 
 def build_temporal_model(weights=None, nc=1, tcfg=None, verbose=True, ch=3):
+    if isinstance(weights, TemporalDetectionModel):
+        # Resume path: checkpoint already holds the full temporal architecture (Detect moved to
+        # index 26). Rebuilding the base and re-inserting would misalign Detect weight transfer.
+        # Build the identical architecture and use BaseModel.load, which rebuilds the cls branch
+        # at the source width (c3 depends on the pretrained head, not nc) before transferring.
+        model = TemporalDetectionModel(cfg=str(YOLO26_YAML), ch=ch, nc=nc, tcfg=tcfg, verbose=verbose,
+                                       insert_temporal=True)
+        model.load(weights, verbose=verbose)
+        wsd, msd = weights.float().state_dict(), model.state_dict()
+        bad = [k for k in wsd if k not in msd or msd[k].shape != wsd[k].shape
+               or (wsd[k].is_floating_point() and not torch.equal(msd[k], wsd[k]))]
+        if bad:
+            raise RuntimeError(f"resume weight transfer incomplete (tcfg differs from checkpoint?): {bad[:5]}")
+        model.end2end = True
+        return model
     # Build base first, load pretrained weights while Detect is still at its original index (23),
     # THEN insert temporal layers (the Detect object is moved, preserving its loaded weights).
     model = TemporalDetectionModel(cfg=str(YOLO26_YAML), ch=ch, nc=nc, tcfg=tcfg, verbose=verbose,

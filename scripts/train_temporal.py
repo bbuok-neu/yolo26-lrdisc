@@ -5,6 +5,7 @@ Usage:
 """
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -38,6 +39,8 @@ def main():
     p.add_argument("--strides", default="3,10,25", help="sparse far-history strides for lrdisc")
     p.add_argument("--static-mode", default="repeat", choices=["repeat", "black", "jitter", "mixed"],
                    help="history synthesis for single-frame pseudo-videos (ThyroidXL stills)")
+    p.add_argument("--resume", default=None, help="path to last.pt; restores checkpoint training state "
+                   "(epoch/optimizer/EMA) and rebuilds tcfg from the run's tcfg.json")
     args = p.parse_args()
 
     strides = tuple(int(s) for s in args.strides.split(","))
@@ -61,6 +64,16 @@ def main():
     tcfg = dict(T=args.T, hid=args.hid, history_window=args.history_window, level_cfg=level_cfg,
                 levels=args.levels, strides=strides if args.levels == "lrdisc" else None,
                 static_mode=args.static_mode)
+    if args.resume:
+        # tcfg is not stored in the ultralytics checkpoint; restore it from the run's tcfg.json
+        tcfg_file = Path(args.resume).resolve().parent.parent / "tcfg.json"
+        if tcfg_file.exists():
+            tcfg = json.loads(tcfg_file.read_text())
+            tcfg["level_cfg"] = {int(k): v for k, v in tcfg["level_cfg"].items()}
+            if tcfg.get("strides"):
+                tcfg["strides"] = tuple(tcfg["strides"])
+        else:
+            print(f"WARNING: {tcfg_file} missing; using flag-derived tcfg (must match the original run)")
 
     overrides = dict(
         model=args.weights, data=args.data, epochs=args.epochs, batch=args.batch, imgsz=args.imgsz,
@@ -69,7 +82,13 @@ def main():
         plots=False, mosaic=0.0, patience=args.epochs, optimizer="auto", cos_lr=False, close_mosaic=0,
         nms=False,  # force end2end one-to-one inference in validation (else val mAP=0)
     )
+    if args.resume:
+        # Only resume + runtime-allowed keys: check_resume restores everything else from the
+        # checkpoint. Passing our default --data here would silently override the ckpt dataset.
+        overrides = dict(resume=args.resume, device=args.device, batch=args.batch,
+                         workers=args.workers, val=True, plots=False)
     trainer = TemporalTrainer(overrides=overrides, tcfg=tcfg)
+    (Path(trainer.save_dir) / "tcfg.json").write_text(json.dumps(tcfg, indent=1))
     trainer.train()
     print("TRAIN DONE", str(PROJECT / "runs" / args.name))
 
